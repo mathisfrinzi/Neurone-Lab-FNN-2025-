@@ -292,7 +292,10 @@ class Interface(Tk):
                 
         self.importantPaned.add(Button(self,text="Regression", command=self.regression))
         
-        
+        # Entrée et sortie
+        self.liste_couche_entree = [CanvasElement(self.canvas, 'rectangle', [0,0,0,0],fill = 'light green')
+        ]
+                                    
         self.couches = [Couche(canvas,1,0,leaky_relu), Couche(canvas, 5, 1, tanh),Couche(canvas, 1,2,lineaire)]
 
         self.testPaned = PanedWindow(self,orient=HORIZONTAL,bg="pink")
@@ -303,8 +306,18 @@ class Interface(Tk):
         self.testPaned.add(Button(self,command=self.tester, text="Tester le réseau pour cette entrée"))
         self.mainPaned.add(self.testPaned)
         
+        tbut = 20
+        self.canvas.add_button_canvas('<Button-1>', self.zoomer, 10,-10,10+tbut,-10-tbut, apparent=(True,{'fill':'purple'}))
+        self.canvas.add_button_canvas("<Button-1>", self.dezoomer, 10+3*tbut,-10,10+4*tbut,-10-tbut, apparent=(True, {'fill':'green'}))
+        
         self.after_()
         self.mainloop()
+    def zoomer(self):
+        global ZOOM
+        ZOOM *= 2 
+    def dezoomer(self):
+        global ZOOM
+        ZOOM /= 2
     def tester(self):
         (W,b,activation,mu,sigma,mu_d,sigma_d) = self.result
         x = np.array(eval(self.entree_test.get()))
@@ -312,7 +325,6 @@ class Interface(Tk):
         x=x.T
         self.couches[0].texte = np.array(x)
         a,h = passe_avant(x,W,b,activation)
-        print(a)
         for i in range(len(a)):
             self.couches[i+1].texte = a[i]
         y = (sigma_d*h[-1]+mu_d).T
@@ -339,7 +351,6 @@ class Interface(Tk):
             self.couches[-1].nombre = len(l[1])
         except:
             pass
-        
         self.after(10,self.after_)
 
 class InterfaceCouche(Tk):
@@ -369,6 +380,8 @@ class InterfaceCouche(Tk):
         self.couche.open_interface = True
     
 
+ZOOM = 0.4
+
 class Couche:
     HEIGHT = 800
     WIDTH = 400
@@ -390,13 +403,15 @@ class Couche:
         self.interface_open = True
     def recheck_size(self):
         
-        Couche.HEIGHT = max([Couche.R*5*Couche.COUCHE[i].nombre for i in Couche.COUCHE.keys()])
+        Couche.HEIGHT = int(max([ZOOM*Couche.R*5*Couche.COUCHE[i].nombre for i in Couche.COUCHE.keys()]))
+        Couche.WIDTH = 400*ZOOM
+        self.update_position_bouton()
     def update_position_bouton(self):
-        taille = 40
+        taille = Couche.WIDTH//5//2
         x = Couche.WIDTH*self.numero_couche + Couche.WIDTH//2-Couche.WIDTH//4
         if self.numero_couche != 0:
             if self.id_bouton == None:
-                self.id_bouton = [self.canvas.add_button_canvas('<Button-1>', self.ajout_couche,x,10,x+taille,10+taille, apparent=(True,{'fill':'red'})) 
+                self.id_bouton = [self.canvas.add_button_canvas('<Button-1>', self.ajout_couche,x,10,x+taille,10+taille, apparent=(True,{'fill':'red','text':'+'})) 
                                   ,self.canvas.add_button_canvas('<Button-1>', self.modifier_valeur, x+Couche.WIDTH//4, 10, x+taille+Couche.WIDTH//4, 10+taille, apparent=(True,{"fill":"pink"}) )] 
             else:
                 self.id_bouton[0].update_coords( [x,10,x+taille,10+taille])
@@ -426,7 +441,7 @@ class Couche:
             Couche.COUCHE[i].update_position_bouton()
     def get_coordonnees_noeuds(self):
         coordonnees = []
-        x = Couche.WIDTH//2 + Couche.WIDTH*self.numero_couche
+        x = Couche.WIDTH//3 + Couche.WIDTH*self.numero_couche
         for i in range(self.nombre):
             y = Couche.HEIGHT//(self.nombre+2)*(i+1) +50
             coordonnees.append((x,y))
@@ -472,16 +487,32 @@ class ButtonCanvas:
     def __init__(self ,canvas, type_clic, command, x0,y0,x1,y1, apparent = (False,{})):
         self.canvas = canvas
         c = None
+        self.elements=[]
+        kwargs = apparent[1]
+        if 'text' in kwargs.keys():
+            t = kwargs['text']
+            del kwargs['text']
+            coord = [(x0+x1)//2, (y0+y1)//2]
         if apparent[0]:
-            c = CanvasElement(self.canvas,'rectangle',[x0,y0,x1,y1], **apparent[1])
+            c = CanvasElement(self.canvas,'rectangle',[x0,y0,x1,y1], **kwargs)
         x0,x1 = min(x0,x1),max(x0,x1)
         y0,y1 = min(y0,y1),max(y0,y1)
         info = (x0,y0,x1,y1, command)
         self.info = info
         self.element = c
+        self.elements.append(c)
+        try:
+            self.elements.append(CanvasElement(self.canvas, 'text', coord, text=t))
+        except:
+            pass
     def update_coords(self,args,**kwargs):
         self.info = (args[0],args[1],args[2],args[3], self.info[4])
-        self.element.update_coords(args,**kwargs)
+        for i in self.elements:
+            if i.type_dessin =='text':
+                arg = [(args[0]+args[2])//2, (args[1]+args[3])//2]
+                i.update_coords(arg,**kwargs)
+            else:
+                i.update_coords(args,**kwargs)
 
 class CanvasRN(Canvas):
     def __init__(self,*args,**kwargs):
@@ -492,17 +523,15 @@ class CanvasRN(Canvas):
         Canvas.__init__(self,*args,**kwargs)
         self.bind('<Motion>',self.motion)
         self.c = CanvasElement(self, 'oval', [0,0,10,10])
-        self.dX, self.dY = (0,0)
+        self.dX, self.dY = (0,100)
         self.liste_button_canvas = []
         self.bind('<Button-1>',lambda e, x="<Button-1>": self.clic(e,x))
         self.after()
     def clic(self, e, bouton='<Button-1>'):
-        print(self.liste_button_canvas)
         for i in self.liste_button_canvas:
             x0,y0,x1,y1,command = i.info
             if x0<=e.x - self.dX<=x1 and y0<=e.y-self.dY<=y1:
                 command()
-                print(command.__name__)
                 break
     def add_button_canvas(self,type_clic, command, x0,y0,x1,y1, apparent = (False,{})):
         b= ButtonCanvas(self,type_clic, command, x0, y0, x1, y1, apparent)
@@ -520,14 +549,15 @@ class CanvasRN(Canvas):
     def motion(self,e):
         x,y = e.x, e.y
         portee = 20
+        sensi = 10
         if x < portee:
-            self.decalageX(20)
+            self.decalageX(sensi)
         if y < portee:
-            self.decalageY(20)
+            self.decalageY(sensi)
         if y > int(self['height'])-portee:
-            self.decalageY(-20)
+            self.decalageY(-sensi)
         if x > int(self['width']) -portee:
-            self.decalageX(-20)
+            self.decalageX(-sensi)
     def decalageX(self, x):
         self.dX += x
     def decalageY(self, y):
@@ -576,6 +606,7 @@ class CanvasElement:
         elif self.type_dessin == 'oval':
             self.id = self.canvas.create_oval(*self.coords,**self.kwargs)
         elif self.type_dessin == 'text':
+            self.coords = [self.coords[0],self.coords[1]]
             self.id = self.canvas.create_text(*self.coords,**self.kwargs)
         else:
             self.id = eval('self.canvas.create_{0}'.format(self.type_dessin))(*self.coords,**self.kwargs)
