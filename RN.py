@@ -167,8 +167,18 @@ RN_cout_app = {}
 RN_cout_val = {}
 RN_cout_test = {}
 RN_resultats = {}
+COURBES = {}
 liste_hyper = ['alpha','n_iters','Ncouches','epaisseurCouches']
 def reseau_neurone(activation, calcule_cout, normali, entree_sortie, alpha, n_iters, D_c, numero=0,classes = None):
+    
+    for i in range(len(entree_sortie[0])):
+        COURBES['X{0}'.format(i)] = list(data0[:, i].astype('float'))
+        COURBES['Xtest{0}'.format(i)] = list(test0[:,i].astype('float'))
+    
+    for i in range(len(entree_sortie[1])):
+        COURBES['Y{0}'.format(i)] = data0[:, i]
+        COURBES['Ytest{0}'.format(i)] = test0[:,i]
+    
     nb_iters = n_iters
     nb_var = len(entree_sortie[0])
     nb_cible = len(entree_sortie[1])
@@ -232,7 +242,20 @@ def reseau_neurone(activation, calcule_cout, normali, entree_sortie, alpha, n_it
             W[i] -= alpha * delta_W[i]
             b[i] -= alpha * delta_b[i]
     
-    return (W,b,activation,mu,sigma,mu_d,sigma_d)
+    COURBES['couts_apprentissage(t)'] = couts_apprentissage
+    COURBES['couts_validation(t)'] = couts_validation
+    
+    a, h = passe_avant(x_test, W, b, activation)
+    y_test = h[-1] # Sortie prédite normalisée
+    cout = calcule_cout(y_test,d_test)
+    COURBES['couts_test'] = [cout for t in range(nb_iters)]
+    
+    for i in range(len(entree_sortie[1])):
+        COURBES['Ytest_pred{0}'.format(i)] = (sigma_d*y_test+mu_d).T
+    
+    COURBES['t'] = [t for t in range(nb_iters)]
+    
+    return [(W,b,activation,mu,sigma,mu_d,sigma_d), cout]
     #l_hyper = liste_hyper.copy()
     for i in range(len(l_hyper)):
         l_hyper[i] = eval(l_hyper[i])
@@ -240,9 +263,7 @@ def reseau_neurone(activation, calcule_cout, normali, entree_sortie, alpha, n_it
     RN_cout_app[t] = couts_apprentissage
     RN_cout_val[t] = couts_validation
     
-    a, h = passe_avant(x_test, W, b, activation)
-    y_test = h[-1] # Sortie prédite normalisée
-    cout = calcule_cout(y_test,d_test)
+    
     RN_cout_test[t] = cout
     if classes != None:
         RN_classes[t] = [(i-mu_d)/sigma_d for i in range(len(classes))]
@@ -257,6 +278,7 @@ data1 = datavide()
 data2 = datavide()
 data0 = datavide()
 
+COURBES = {}
 
 class Interface(Tk):
     def __init__(self):
@@ -269,6 +291,7 @@ class Interface(Tk):
         self.dataPaned.add(paned_collect_data.text_area)
         self.dataPaned.add(PanedWindowDivision(self,0))
         self.mainPaned.add(self.dataPaned)
+        
         
         canvas = CanvasRN(self)
         self.canvas = canvas
@@ -290,11 +313,14 @@ class Interface(Tk):
         self.importantPaned.add(self.entree_entree_sortie)
         self.dataPaned.add(self.importantPaned)
                 
-        self.importantPaned.add(Button(self,text="Regression", command=self.regression))
+        self.importantPaned.add(Button(self,text="Entraîner le réseau", command=self.regression))
+        self.importantPaned.add(Button(self,text="Tracer des courbes", command=self.open_courbe))
         
         # Entrée et sortie
         self.liste_couche_entree = [CanvasElement(self.canvas, 'rectangle', [0,0,0,0],fill = 'light green')
-        ]
+        , CanvasElement(self.canvas, 'text', [0,0,0,0], text = '')
+        , CanvasElement(self.canvas, 'rectangle', [0,0,0,0],fill = 'light green')
+        , CanvasElement(self.canvas, 'text', [0,0,0,0], text = '')]
                                     
         self.couches = [Couche(canvas,1,0,leaky_relu), Couche(canvas, 5, 1, tanh),Couche(canvas, 1,2,lineaire)]
 
@@ -309,6 +335,7 @@ class Interface(Tk):
         tbut = 20
         self.canvas.add_button_canvas('<Button-1>', self.zoomer, 10,-10,10+tbut,-10-tbut, apparent=(True,{'fill':'purple'}))
         self.canvas.add_button_canvas("<Button-1>", self.dezoomer, 10+3*tbut,-10,10+4*tbut,-10-tbut, apparent=(True, {'fill':'green'}))
+        self.sortie_test = "Lancez une simulation"
         
         self.after_()
         self.mainloop()
@@ -328,23 +355,50 @@ class Interface(Tk):
         for i in range(len(a)):
             self.couches[i+1].texte = a[i]
         y = (sigma_d*h[-1]+mu_d).T
+        self.sortie_test = y
         return y
+    def open_courbe(self):
+        InterfaceCourbe()
     def regression(self):
         activation = [i.activation for i in self.couches]
         D_c = [i.nombre for i in self.couches]
         entree_sortie = eval(self.entree_entree_sortie.get())
+        
         n_iters = eval(self.entree_n_iters.get())
         alpha = eval(self.entree_alpha.get())
-        try:
-            result = reseau_neurone_regression( activation, calcule_cout_mse, normalisation, entree_sortie,alpha, n_iters, D_c  )
-        except Exception as e:
-            alerte(str(e))
-        self.result = result
-        print(W)
+        if type(alpha) == type([]):
+            _ = alpha.copy()
+            COURBES["alpha"] = alpha
+            l = []
+            for alph in alpha:
+                result, cout = reseau_neurone_regression( activation, calcule_cout_mse, normalisation, entree_sortie,alph, n_iters, D_c  )
+                l.append(cout)
+            COURBES['cout(alpha)'] = l
+        
+        else:
+            alph = alpha
+            result, cout = reseau_neurone_regression( activation, calcule_cout_mse, normalisation, entree_sortie,alph, n_iters, D_c  )
+
+            if 'alpha' in COURBES.keys():
+                del COURBES['alpha']
+        self.result = result, cout
     def after_(self):
         for couche in self.couches:
             couche.update_canvas()
         
+        taille = Couche.WIDTH//2
+        x,y = (-Couche.WIDTH//2, 40+Couche.HEIGHT//2)
+        self.liste_couche_entree[0].update_coords([x-taille, y-taille, x+taille, y+taille] )
+        self.liste_couche_entree[1].update_coords([x,y])
+        self.liste_couche_entree[1].kwargs['text'] = 'In : '+str(self.entree_test.get())
+        n = len(self.couches)
+        x,y = (Couche.WIDTH*n+Couche.WIDTH//2, 40+Couche.HEIGHT//2)
+        self.liste_couche_entree[2].update_coords([x-taille, y-taille, x+taille, y+taille] )
+        self.liste_couche_entree[3].update_coords([x,y])
+        try:
+            self.liste_couche_entree[3].kwargs['text'] = 'Out : '+str(self.sortie_test)
+        except:
+            pass
         try:
             l = eval(self.entree_entree_sortie.get())
             self.couches[0].nombre = len(l[0])
@@ -352,6 +406,75 @@ class Interface(Tk):
         except:
             pass
         self.after(10,self.after_)
+
+class InterfaceCourbe(Tk):
+    def __init__(self):
+        Tk.__init__(self)
+        self.courbe0 = list(COURBES.keys()).copy()
+        self.courbe1 = self.courbe0.copy()
+        self.selected = []
+        self.mainPaned = PanedWindow(self, orient = HORIZONTAL, height = 600)
+        
+        self.listebtn1 = []
+        self.btnPaned0 = PanedWindow(self,orient=VERTICAL)
+        self.btnPaned0.add(Label(self, text="Ordonnée(s) : "))
+        for i in self.courbe0:
+            b = Button(self,text=i, command = lambda x=i:self.definir1(x))
+            self.listebtn1.append(b)
+            self.btnPaned0.add(b)
+        
+        self.mainPaned.add(self.btnPaned0)
+        
+        self.listebtn2 = []
+        self.btnPaned1 = PanedWindow(self,orient=VERTICAL)
+        self.btnPaned1.add(Label(self,text="Abscisse :"))
+        for i in self.courbe1:
+            b = Button(self,text=i, command = lambda x=i:self.definir2(x))
+            self.listebtn2.append(b)
+            self.btnPaned1.add(b)
+        
+        self.mainPaned.add(self.btnPaned1)
+        
+        self.mainPaned.add(Button(self,text="Tracez la courbe", command = self.definir))
+        self.canvas_cout = None
+        self.mainPaned.pack()
+        self.mainloop()
+    
+    def definir(self):
+        fig, ax = plt.subplots()
+        y = self.element2
+        for x in self.selected:
+            X = COURBES[x]
+            Y = COURBES[y]
+            ax.plot(Y,X,marker="x",linestyle="", label='{0}({1})'.format(x,y))
+        plt.legend()
+        if self.canvas_cout != None:
+            self.mainPaned.forget(self.last_canvas)
+        self.canvas_cout = FigureCanvasTkAgg(fig, master=self)
+        canvas_widget = self.canvas_cout.get_tk_widget()
+        self.last_canvas = canvas_widget
+        self.mainPaned.add(canvas_widget)
+    
+    def definir1(self, element):
+        for b in self.listebtn1:
+            b['bg'] = 'red'
+            if b['text'] in self.selected:
+                b['bg'] = 'light green'
+            if b['text'] == element:
+                if b["text"] in self.selected:
+                    b['bg'] = 'red'
+                    self.selected.remove(element)
+                else:
+                    b['bg'] = "light green"
+                    self.selected.append(element)
+        self.element1 = element
+        
+    def definir2(self,element):
+        for b in self.listebtn2:
+            b['bg'] = 'red'
+            if b['text'] == element:
+                b['bg'] = 'light green'
+        self.element2 = element
 
 class InterfaceCouche(Tk):
     def __init__(self, couche):
@@ -559,9 +682,9 @@ class CanvasRN(Canvas):
         if x > int(self['width']) -portee:
             self.decalageX(-sensi)
     def decalageX(self, x):
-        self.dX += x
+        self.dX += ZOOM*x
     def decalageY(self, y):
-        self.dY += y
+        self.dY += ZOOM*y
              
     
 class CanvasElement:
