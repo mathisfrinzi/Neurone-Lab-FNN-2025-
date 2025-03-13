@@ -23,7 +23,12 @@ Par exemple, on veut que notre réseau de neurone apprenne à imiter la fonction
   ![Data](exemples/test_cos.png)
 
 Pour celà on entre les différents hyperparamètres représentés sur la figure ci-dessus.
+On peut visualiser directement la prédiction et la comparer avec le résultat attendu du test :
 
   ![Data](exemples/test_vs_prediction.png)
 
-On peut visualiser directement la prédiction et la comparer avec le résultat attendu du test.
+
+On peut également observer l'évolution des couts lors de l'apprentissage : 
+
+  ![Data](exemples/cout.png)
+
