@@ -1,7 +1,7 @@
 # Réseaux-de-neurones-FeedForward-2025-
 Interface qui permet de visualiser les résultats associés à un réseau de neurone de type FeedForward.
 
-Utilisation du fichier : télécharger le fichier RN.py et le lancer.
+Utilisation du fichier : télécharger le fichier NeuroneLab.py et le lancer.
 Une interface s'ouvre alors, on y trouve 5 zones :
 - en cyan, la partie qui permet de récupérer la data sur votre ordinateur, qui permettra d'entraîner, valider et tester votre réseau de neurones.
 
