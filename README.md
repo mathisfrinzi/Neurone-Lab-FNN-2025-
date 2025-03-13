@@ -30,5 +30,5 @@ On peut visualiser directement la prédiction et la comparer avec le résultat a
 
 On peut également observer l'évolution des couts lors de l'apprentissage : 
 
-  ![Data](exemples/cout.png)
+  ![Data](exemples/couts.png)
 
