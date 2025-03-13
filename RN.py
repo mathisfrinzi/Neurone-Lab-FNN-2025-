@@ -172,12 +172,12 @@ liste_hyper = ['alpha','n_iters','Ncouches','epaisseurCouches']
 def reseau_neurone(activation, calcule_cout, normali, entree_sortie, alpha, n_iters, D_c, numero=0,classes = None):
     
     for i in range(len(entree_sortie[0])):
-        COURBES['X{0}'.format(i)] = list(data0[:, i].astype('float'))
-        COURBES['Xtest{0}'.format(i)] = list(test0[:,i].astype('float'))
+        COURBES['X{0}'.format(i)] = list(data0[:, entree_sortie[0][i]].astype('float'))
+        COURBES['Xtest{0}'.format(i)] = list(test0[:,entree_sortie[0][i]].astype('float'))
     
     for i in range(len(entree_sortie[1])):
-        COURBES['Y{0}'.format(i)] = data0[:, i]
-        COURBES['Ytest{0}'.format(i)] = test0[:,i]
+        COURBES['Y{0}'.format(i)] = data0[:, entree_sortie[1][i]]
+        COURBES['Ytest{0}'.format(i)] = test0[:,entree_sortie[1][i]]
     
     nb_iters = n_iters
     nb_var = len(entree_sortie[0])
@@ -381,7 +381,7 @@ class Interface(Tk):
 
             if 'alpha' in COURBES.keys():
                 del COURBES['alpha']
-        self.result = result, cout
+        self.result = result
     def after_(self):
         for couche in self.couches:
             couche.update_canvas()
@@ -801,7 +801,7 @@ class PanedWindowData(PanedWindow):
             data2 = data
             data = data2
         self.delete_data()
-        self.text_area.insert(INSERT,(data))
+        self.text_area.insert(INSERT,np.array2string(data, threshold=np.inf, separator=', '))
 
 entr0 = datavide()
 val0 = datavide()
