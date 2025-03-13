@@ -192,13 +192,10 @@ def reseau_neurone(activation, calcule_cout, normali, entree_sortie, alpha, n_it
     x_app = (x_app-mu)/sigma
     x_val = (x_val-mu)/sigma
     x_test = (x_test-mu)/sigma
-    if classes == None:
-        d_app, mu_d, sigma_d = normalisation_max(d_app)
-        d_val = (d_val - mu_d) / sigma_d
-        d_test = (d_test - mu_d) / sigma_d
-    else:
-        mu_d = 0 
-        sigma_d = 1
+    
+    d_app, mu_d, sigma_d = normalisation_max(d_app)
+    d_val = (d_val - mu_d) / sigma_d
+    d_test = (d_test - mu_d) / sigma_d
     
     couts_apprentissage = np.zeros(nb_iters)
     couts_validation = np.zeros(nb_iters)
@@ -384,13 +381,16 @@ class Interface(Tk):
         x,y = (-Couche.WIDTH//2, 40+Couche.HEIGHT//2)
         self.liste_couche_entree[0].update_coords([x-taille, y-taille, x+taille, y+taille] )
         self.liste_couche_entree[1].update_coords([x,y])
-        self.liste_couche_entree[1].kwargs['text'] = 'In : '+str(self.entree_test.get())
+        try:
+            self.liste_couche_entree[1].kwargs['text'] = 'In : '+str(self.entree_test.get())+'\n µ = {0}\n sigma = {1}'.format(self.result[3],self.result[4])
+        except:
+            self.liste_couche_entree[1].kwargs['text'] = 'In : '+str(self.entree_test.get())
         n = len(self.couches)
         x,y = (Couche.WIDTH*n+Couche.WIDTH//2, 40+Couche.HEIGHT//2)
         self.liste_couche_entree[2].update_coords([x-taille, y-taille, x+taille, y+taille] )
         self.liste_couche_entree[3].update_coords([x,y])
         try:
-            self.liste_couche_entree[3].kwargs['text'] = 'Out : '+str(self.sortie_test)
+            self.liste_couche_entree[3].kwargs['text'] = 'Out : '+str(self.sortie_test)+'\n µ_d = {0}\n sigma_d = {1}'.format(self.result[5],self.result[6])
         except:
             pass
         try:
@@ -666,7 +666,7 @@ class CanvasRN(Canvas):
     def motion(self,e):
         x,y = e.x, e.y
         portee = 20
-        sensi = 10
+        sensi = 30
         if x < portee:
             self.decalageX(sensi)
         if y < portee:
