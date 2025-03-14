@@ -526,7 +526,7 @@ class Couche:
     def update_position_bouton(self):
         taille = Couche.WIDTH//5//2
         x = Couche.WIDTH*self.numero_couche + Couche.WIDTH//2-Couche.WIDTH//4
-        if self.numero_couche != 0:
+        if True:
             if self.id_bouton == None:
                 self.id_bouton = [self.canvas.add_button_canvas('<Button-1>', self.ajout_couche,x,10,x+taille,10+taille, apparent=(True,{'fill':'red','text':'+'})) 
                                   ,self.canvas.add_button_canvas('<Button-1>', self.modifier_valeur, x+Couche.WIDTH//4, 10, x+taille+Couche.WIDTH//4, 10+taille, apparent=(True,{"fill":"pink"}) )] 
