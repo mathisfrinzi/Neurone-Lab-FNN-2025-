@@ -13,6 +13,7 @@ import tkinter.messagebox
 import random
 
 def normalisation(x):
+    '''Fonction de normalisation standard : on retranche par la moyenne et on divise par l'écart-type de l'échantillon x en entrée'''
     x = x.astype(float)
     mu = np.mean(x, 0)
     sigma = np.std(x, 0)
@@ -20,6 +21,7 @@ def normalisation(x):
     return x_norm, mu, sigma
 
 def normalisation_min_max(x):
+    '''Fonction de normalisation min-max'''
     x = x.astype(float)
     mu = np.mean(x,0)
     sigma = x.max() - x.min()
@@ -27,6 +29,7 @@ def normalisation_min_max(x):
     return x_norm, mu, sigma
 
 def normalisation_max(x):
+    '''Fonction de normalisation max : les valeurs de sortie sont entre -1 et 1, -1 correspond au minimum et 1 correspond au maximum de l'échantillon d'entrée x'''
     x = x.astype(float)
     mu = np.mean(x,0)
     x_norm = x-mu
@@ -35,10 +38,12 @@ def normalisation_max(x):
     return x_norm,mu,sigma
 
 def tanh(z, deriv=False):
+    '''Renvoie tanh(z) ou tanh'(z) si deriv=True'''
     t = np.tanh(z)
     return (1 - t**2) if deriv else t
 
 def relu(z, deriv=False):
+    '''Renvoie relu(z) ou relu'(z) si deriv = True'''
     r = np.zeros(z.shape)
     if deriv:
         pos = np.where(z>=0)
@@ -48,12 +53,17 @@ def relu(z, deriv=False):
         return np.maximum(r,z)
 
 def leaky_relu(z, deriv=False, alpha=0.01):
+    '''Renvoie leaky_relu(z) ou leaky_relu'(z) si deriv=True
+    Le coefficient alpha permet d'adapter le leaky_relu
+    '''
     if deriv:
         return np.where(z > 0, 1, alpha)
     return np.where(z > 0, z, alpha * z)
 
 
 def softmax(a, deriv = False):
+    '''Renvoie softmax(z) si deriv=False
+    Si deriv=True, la fonction renvoie 1 et le programme se comportera comme si deltah = deltaa dans la passe-arrière'''
     a_ = a.copy()
     K = a_.shape[0]
     somme = sum([np.exp(a_[i]) for i in range(K)])
@@ -63,6 +73,7 @@ def softmax(a, deriv = False):
     return 1 #on fait ça pour que le deltah soit égal à deltaa
 
 def sigmoide(z, deriv=False):
+    '''Renvoie sigmoide(z) ou sigmoide'(z) si deriv=True'''
     s = 1 / (1 + np.exp(-z))
     if deriv:
         return s * (1 - s)
@@ -70,12 +81,14 @@ def sigmoide(z, deriv=False):
         return s
     
 def lineaire(z, deriv=False):
+    '''Renvoie lineaire(z) ou lineaire'(z) si deriv=True'''
     if deriv:       
         return 1     
     else :
         return z
 
 def calcule_cout_mse(y, d):
+    '''Renvoie la moyennes des différences au carré entre y et d''' 
     cout = np.sqrt(np.mean((y-d)**2))
     return cout
 
@@ -97,6 +110,7 @@ def calcule_cout_entropie_croisee( a,d, epsilon =10**(-6)):
 entropie_croisee = calcule_cout_entropie_croisee
 
 def passe_avant(x, W, b, activation):
+    '''Algorithme de passe-avant, en fonction des poids contenus dans W et b et de la structure du réseau contenu dans activation, on obtient à partir de l'entrée x la sortie du réseau de neurone'''
     h = [x]
     a = []
     for i in range(len(b)):
@@ -108,6 +122,8 @@ def passe_avant(x, W, b, activation):
     return a, h
 
 def passe_arriere(delta_h, a, h, W, activation):
+    '''Passe-arrière : permet de corriger le réseau en fonction de l'erreur sur la sortie contenue dans delta_h
+    La correction est contenue dans delta_W et delta_b.    '''
     delta_b = []
     delta_W = []
     delta = delta_h.copy()
