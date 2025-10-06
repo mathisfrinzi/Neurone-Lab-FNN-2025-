@@ -360,7 +360,7 @@ class Interface(Tk):
         self.couches[0].texte = np.array(x)
         a,h = passe_avant(x,W,b,activation)
         for i in range(len(a)):
-            self.couches[i+1].texte = a[i]
+            self.couches[i+1].texte = activation[i](a[i])
         y = (sigma_d*h[-1]+mu_d).T
         self.sortie_test = y
         return y
@@ -870,3 +870,4 @@ def alerte(message):
     messagebox.showerror("Erreur",str(message))
 
 I = Interface()
+
